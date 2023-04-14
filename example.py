@@ -1,5 +1,7 @@
-from pyplugin import register, generate_ai_plugin_and_openapi_spec, launch_server
+from autoplugin import register, generate_files, launch_server
 from fastapi import FastAPI
+from testing import testing_server
+from os.path import join
 
 
 app = FastAPI()
@@ -16,8 +18,24 @@ async def add(a: int, b: int) -> int:
 
 if __name__ == "__main__":
     # Generate the necessary files
-    generate_ai_plugin_and_openapi_spec(app)
+    generate_files(app)
 
-    # Launch the server
-    launch_server(app)
+    # Launch and test the server
+    host = "127.0.0.1"
+    port = 8000
+    server, base_url = testing_server(host=host, port=port, app_file=__file__, app_var="app")
 
+    with server.run_in_thread():
+        # Server is started. Do your tests here.       
+        
+        url = join(base_url, "hello")
+
+        import requests
+        
+        response = requests.post(url, json={"name": "John Doe"})
+        assert response.json() == {"result": "Hello, John Doe! Age 5."}
+
+        response = requests.get(url, params={"name": "Jane Doe", "age": 10})
+        assert response.json() == {"result": "Hello, Jane Doe! Age 10."}
+        # Server will be stopped.
+        
