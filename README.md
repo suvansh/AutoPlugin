@@ -45,7 +45,8 @@ async def get_order(name: str) -> str:
 4. Generate the necessary files (`openapi.yaml` and `ai-plugin.json`) for your ChatGPT plugin.
 Optionally, specify `out_dir` to change where they're saved to:
 ```python
-generate(app)  # generated files saved to `.well-known/` directory
+# generated files saved to `.well-known/` directory
+generate(app, name="Example", description="Plugin to add numbers or greet users")
 ```
 
 5. Launch the server. Optionally, specify `host` and `port`:
