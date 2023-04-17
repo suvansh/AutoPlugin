@@ -34,9 +34,7 @@ app = FastAPI()
 ```
 
 3. Use the register decorator to register your functions as API endpoints.
-AutoPlugin generates function descriptions in the OpenAPI spec so that ChatGPT knows how to use your endpoints.
-By default, the description is fetched from the docstring. If there's no docstring, or if you specify `generate_description=True`, AutoPlugin will generate one automatically from OpenAI's API (requires setting the `OPENAI_API_KEY` environment variable).
-Finally, you can specify a description (e.g. if the docstring contains extra information not needed in the OpenAPI description) by passing the `description` keyword argument.
+AutoPlugin will automatically generate descriptions if needed.
 ```python
 @register(app, methods=["GET"])
 async def get_order(name: str) -> str:
@@ -78,7 +76,7 @@ async def add(a: int, b: int) -> int:
 
 
 # Generate the necessary files
-generate(app)
+generate(app, name="Example", description="Plugin to add numbers or greet users")
 
 # Launch the server
 launch(app)
@@ -86,6 +84,31 @@ launch(app)
 
 This example creates a FastAPI server with two endpoints, `/hello` and `/add`, that can be accessed using GET or POST requests.
 AutoPlugin will use the docstring for the OpenAPI description of `/add` and generate an automatic description for `/hello` by passing the source code of the function to OpenAI's API.
+
+## The `@register` Decorator
+The `@register` decorator is used as follows:
+```python
+@register(app: FastAPI,
+            methods: List[str],                     # which HTTP methods to support
+            description: Optional[str],             # if provided, used as is
+            generate_description: Optional[bool])   # whether to autogenerate a description
+def my_func(...):
+    ...
+```
+AutoPlugin generates function descriptions in the OpenAPI spec so that ChatGPT knows how to use your endpoints. There are a few keyword arguments to customize the behavior of this generation
+By default, the description is fetched from the docstring. If there's no docstring, or if you specify `generate_description=True`, AutoPlugin will generate one automatically from OpenAI's API (requires the LangChain package and setting the `OPENAI_API_KEY` environment variable).
+Finally, you can override the description generation behavior by specifying a description (e.g. if the docstring contains extra information not needed in the OpenAPI description) in the `description` keyword argument.
+
+
+## The `generate` Function
+The `generate` function has the following signature:
+```python
+def generate(app: FastAPI, out_dir: str=".well-known", **kwargs):
+```
+The `out_dir` keyword argument determines where the `ai-plugin.json` and `openapi.yaml` files are saved upon generation.
+
+All other keyword arguments are used to customize fields of the [plugin manifest file](https://platform.openai.com/docs/plugins/getting-started/plugin-manifest).
+The `name` keyword argument can be used for convenience to update both `name_for_human` and `name_for_model` at once. Same for `description`. In a future update, these can be automatically generated to further streamline the deployment process.
 
 
 ## Testing
