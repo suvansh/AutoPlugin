@@ -16,7 +16,7 @@ pip install autoplugin
 To install with the ability to generate endpoint descriptions for the OpenAPI specification automatically from source code, install with
 
 ```bash
-pip install autoplugin[gen]
+pip install 'autoplugin[gen]'
 ```
 
 ## Basic Usage
