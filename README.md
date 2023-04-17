@@ -22,15 +22,14 @@ pip install 'autoplugin[gen]'
 ## Basic Usage
 To get started with AutoPlugin, follow these steps:
 
-1. Import the necessary functions from AutoPlugin and FastAPI:
+1. Import the necessary functions from AutoPlugin:
 ```python
-from autoplugin import register, generate, launch
-from fastapi import FastAPI
+from autoplugin import register, generate, launch, get_app
 ```
 
-2. Create a FastAPI app instance:
+2. Create an app instance, backed by FastAPI:
 ```python
-app = FastAPI()
+app = get_app()
 ```
 
 3. Use the register decorator to register your functions as API endpoints.
@@ -54,16 +53,23 @@ generate(app)  # generated files saved to `.well-known/` directory
 launch(app)  # API hosted at localhost:8000
 ```
 
+6. Follow the [instructions](https://platform.openai.com/docs/plugins/getting-started/running-a-plugin) to run a custom plugin:
+- On ChatGPT, make a new chat.
+- Under "Models" select "Plugins"
+- In the Plugins dropdown, select "Plugin store"
+- Click "Develop your own plugin"
+- Enter the URL you're running the server at ("localhost:8000" by default) and hit enter.
+- Click "Install localhost plugin" 
+
 
 ## Example
 
 Here's a complete example that demonstrates how to use AutoPlugin to create API endpoints for two functions, `hello` and `add`.
 It also generates the `openapi.yaml` and `ai-plugin.json` files, by default in the `.well-known` directory. :
 ```python
-from autoplugin.autoplugin import register, generate, launch
-from fastapi import FastAPI
+from autoplugin.autoplugin import register, generate, launch, get_app
 
-app = FastAPI()
+app = get_app()
 
 @register(app, methods=["GET", "POST"])
 async def hello(name: str, age: int = 5) -> str:
@@ -108,7 +114,7 @@ def generate(app: FastAPI, out_dir: str=".well-known", **kwargs):
 The `out_dir` keyword argument determines where the `ai-plugin.json` and `openapi.yaml` files are saved upon generation.
 
 All other keyword arguments are used to customize fields of the [plugin manifest file](https://platform.openai.com/docs/plugins/getting-started/plugin-manifest).
-The `name` keyword argument can be used for convenience to update both `name_for_human` and `name_for_model` at once. Same for `description`. In a future update, these can be automatically generated to further streamline the deployment process.
+The `name` keyword argument can be used for convenience to update both `name_for_human` and `name_for_model` at once. Same for `description`. In a future update, these can be automatically generated to further streamline the deployment process. Keep in mind the [best practices](https://platform.openai.com/docs/plugins/getting-started/writing-descriptions) for descriptions.
 
 
 ## Testing

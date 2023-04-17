@@ -11,6 +11,7 @@ from os.path import join
 import inspect
 from typing import Callable, List, Dict, Any, Optional
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 import uvicorn
 from pydantic import BaseModel, create_model
@@ -84,6 +85,12 @@ def generate(app: FastAPI, out_dir=".well-known", **kwargs):
 
     with open(join(out_dir, "ai-plugin.json"), "w") as plugin_json:
         json.dump(plugin_spec, plugin_json, indent=4)
+
+    @app.get("/.well-known/ai-plugin.json", response_class=PlainTextResponse)
+    async def get_plugin_json():
+        with open(join(out_dir, "ai-plugin.json"), "r") as f:
+            content = f.read()
+        return content
 
 
 def register(app: FastAPI,

@@ -1,11 +1,10 @@
-from autoplugin import register, generate, launch
-from fastapi import FastAPI
+from autoplugin import register, generate, launch, get_app
+
 from autoplugin.testing import testing_server
 from os.path import join
 
 
-app = FastAPI()
-
+app = get_app()
 
 @register(app, methods=["GET", "POST"])
 async def hello(name: str, age: int = 5) -> str:
