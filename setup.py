@@ -8,7 +8,8 @@ setup(
         "fastapi",
         "pydantic",
         "uvicorn",
-        "requests"
+        "requests",
+        "PyYAML",
     ],
     extras_require={
         "gen": ["langchain"],

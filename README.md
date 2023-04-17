@@ -24,7 +24,7 @@ To get started with AutoPlugin, follow these steps:
 
 1. Import the necessary functions from AutoPlugin and FastAPI:
 ```python
-from autoplugin.autoplugin import register, generate, launch
+from autoplugin import register, generate, launch
 from fastapi import FastAPI
 ```
 
@@ -36,11 +36,13 @@ app = FastAPI()
 3. Use the register decorator to register your functions as API endpoints.
 AutoPlugin generates function descriptions in the OpenAPI spec so that ChatGPT knows how to use your endpoints.
 By default, the description is fetched from the docstring. If there's no docstring, or if you specify `generate_description=True`, AutoPlugin will generate one automatically from OpenAI's API (requires setting the `OPENAI_API_KEY` environment variable).
-Finally, you can specify a description (e.g. if the docstring contains extra information not needed in the OpenAPI description) by passing the `description` keyword argument:
+Finally, you can specify a description (e.g. if the docstring contains extra information not needed in the OpenAPI description) by passing the `description` keyword argument.
 ```python
-@register(app, methods=["GET", "POST"], generate_description=True)
-async def hello(name: str, age: int = 5) -> str:
-    return f"Hello, {name}! Age {age}."
+@register(app, methods=["GET"])
+async def get_order(name: str) -> str:
+    order = await get_order_from_db(name)
+    return f"Order for {name}: {order}"
+# Generated description: "Retrieves an order from the database for a given name."
 ```
 
 4. Generate the necessary files (`openapi.yaml` and `ai-plugin.json`) for your ChatGPT plugin.

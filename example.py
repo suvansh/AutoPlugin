@@ -1,4 +1,4 @@
-from autoplugin.autoplugin import register, generate, launch
+from autoplugin import register, generate, launch
 from fastapi import FastAPI
 from autoplugin.testing import testing_server
 from os.path import join
@@ -7,13 +7,14 @@ from os.path import join
 app = FastAPI()
 
 
-@register(app, methods=["GET", "POST"], generate_description=True)
+@register(app, methods=["GET", "POST"])
 async def hello(name: str, age: int = 5) -> str:
     return f"Hello, {name}! Age {age}."
 
 
-@register(app, methods=["GET"], generate_description=True)
+@register(app, methods=["GET"])
 async def add(a: int, b: int) -> int:
+    """ Add two numbers together. """
     return a + b
 
 
