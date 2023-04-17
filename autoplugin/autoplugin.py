@@ -73,14 +73,19 @@ def register(app: FastAPI,
              *,
              methods: List[str] = None,
              description: Optional[str] = None,
-             generate_description: bool = True,
+             generate_description: Optional[bool] = None,
              ) -> Callable:
     if func is None:
         return functools.partial(register, app, methods=methods, description=description, generate_description=generate_description)
 
-    if description is None and generate_description:
-        print("Generating description for function", func.__name__)
-        description = _generate_description(func)
+    if description is None:
+        if generate_description is None:
+            # user did not specify whether to generate. generate if no docstring, otherwise use docstring
+            description = _generate_description(func) if func.__doc__ is None else func.__doc__
+        elif generate_description:
+            description = _generate_description(func)
+        else:  # generate_description is False. use docstring if it exists, otherwise use None (no description)
+            description = func.__doc__
     if methods is None:
         methods = ["POST"]
 
