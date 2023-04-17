@@ -4,3 +4,9 @@ __pycache__/
 
 # output dir
 .well-known/
+
+# build files
+*.egg-info/
+dist/
+build/
+

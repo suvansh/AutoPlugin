@@ -1,6 +1,6 @@
-from src.autoplugin.autoplugin import register, generate_files, launch_server
+from autoplugin.autoplugin import register, generate, launch
 from fastapi import FastAPI
-from testing import testing_server
+from autoplugin.testing import testing_server
 from os.path import join
 
 
@@ -19,7 +19,7 @@ async def add(a: int, b: int) -> int:
 
 def test_hello():
     # Generate the necessary files
-    generate_files(app)
+    generate(app)
 
     # Launch and test the server
     host = "127.0.0.1"
@@ -43,11 +43,11 @@ def test_hello():
 
 if __name__ == "__main__":
     # Generate the necessary files
-    generate_files(app, out_dir=".well-known")
+    generate(app)
 
     # Test /hello endpoint
     test_hello()
 
     # Launch the server
-    launch_server(app)
+    launch(app)
         

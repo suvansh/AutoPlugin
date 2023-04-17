@@ -21,6 +21,53 @@ import json
 _func_description_chain = None
 
 
+def launch(app: FastAPI, host="127.0.0.1", port=8000):
+    uvicorn.run(app, host=host, port=port)
+
+
+def generate(app: FastAPI, out_dir=".well-known", **kwargs):
+    """ kwargs should be key-value pairs for the plugin_spec json """
+    os.makedirs(out_dir, exist_ok=True)
+    openapi = get_openapi(
+        title="Custom ChatGPT Plugin",
+        version="1.0.0",
+        routes=app.routes,
+    )
+
+    with open(join(out_dir, "openapi.yaml"), "w") as openapi_yaml:
+        yaml.dump(openapi, openapi_yaml, sort_keys=False)
+
+    plugin_spec = {
+        "name_for_human": "Custom Plugin",
+        "name_for_model": "Custom Plugin",
+        "description_for_human": "Unspecified custom plugin. Add behavior here.",
+        "description_for_model": "Unspecified custom plugin. Add behavior here.",
+        "schema_version": "v1",
+        "auth": {
+            "type": "none"
+        },
+        "api": {
+            "type": "openapi",
+            "url": "http://localhost:8000/openapi.yaml",
+            "is_user_authenticated": False
+        },
+        "logo_url": "http://example.com/logo.png",
+        "contact_email": "support@example.com",
+        "legal_info_url": "http://www.example.com/legal"
+    }
+    plugin_spec.update(kwargs)
+
+    # character limit checks
+    _plugin_check_limit(plugin_spec, "name_for_human", 50)
+    _plugin_check_limit(plugin_spec, "name_for_model", 50)
+    _plugin_check_limit(plugin_spec, "description_for_human", 120)
+    _plugin_check_limit(plugin_spec, "description_for_model",
+                       8000)  # will decrease over time
+
+    with open(join(out_dir, "ai-plugin.json"), "w") as plugin_json:
+        json.dump(plugin_spec, plugin_json, indent=4)
+
+
 def register(app: FastAPI,
              func: Callable = None,
              *,
@@ -89,56 +136,9 @@ def register(app: FastAPI,
     return wrapper
 
 
-def plugin_check_limit(plugin_spec: Dict[str, Any], key: str, char_limit: int):
+def _plugin_check_limit(plugin_spec: Dict[str, Any], key: str, char_limit: int):
     assert len(plugin_spec[key]) <= char_limit, \
         f"Key \"{key}\" in plugin spec is too long. Expected: <={char_limit}, found: {len(plugin_spec[key])}."
-
-
-def generate_files(app: FastAPI, out_dir="output", **kwargs):
-    """ kwargs should be key-value pairs for the plugin_spec json """
-    os.makedirs(out_dir, exist_ok=True)
-    openapi = get_openapi(
-        title="Custom ChatGPT Plugin",
-        version="1.0.0",
-        routes=app.routes,
-    )
-
-    with open(join(out_dir, "openapi.yaml"), "w") as openapi_yaml:
-        yaml.dump(openapi, openapi_yaml, sort_keys=False)
-
-    plugin_spec = {
-        "name_for_human": "Custom Plugin",
-        "name_for_model": "Custom Plugin",
-        "description_for_human": "Unspecified custom plugin. Add behavior here.",
-        "description_for_model": "Unspecified custom plugin. Add behavior here.",
-        "schema_version": "v1",
-        "auth": {
-            "type": "none"
-        },
-        "api": {
-            "type": "openapi",
-            "url": "http://localhost:8000/openapi.yaml",
-            "is_user_authenticated": False
-        },
-        "logo_url": "http://example.com/logo.png",
-        "contact_email": "support@example.com",
-        "legal_info_url": "http://www.example.com/legal"
-    }
-    plugin_spec.update(kwargs)
-
-    # character limit checks
-    plugin_check_limit(plugin_spec, "name_for_human", 50)
-    plugin_check_limit(plugin_spec, "name_for_model", 50)
-    plugin_check_limit(plugin_spec, "description_for_human", 120)
-    plugin_check_limit(plugin_spec, "description_for_model",
-                       8000)  # will decrease over time
-
-    with open(join(out_dir, "ai-plugin.json"), "w") as plugin_json:
-        json.dump(plugin_spec, plugin_json, indent=4)
-
-
-def launch_server(app: FastAPI, host="127.0.0.1", port=8000):
-    uvicorn.run(app, host=host, port=port)
 
 
 def _generate_description(func: Callable) -> str:
