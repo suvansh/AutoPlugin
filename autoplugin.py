@@ -1,5 +1,6 @@
 import functools
 import os
+from os.path import join
 import inspect
 from typing import Callable, List, Dict, Any, Optional
 from fastapi import FastAPI, Depends
@@ -86,16 +87,16 @@ def plugin_check_limit(plugin_spec: Dict[str, Any], key: str, char_limit: int):
         f"Key \"{key}\" in plugin spec is too long. Expected: <={char_limit}, found: {len(plugin_spec[key])}."
 
 
-def generate_files(app: FastAPI, **kwargs):
+def generate_files(app: FastAPI, out_dir="output", **kwargs):
     """ kwargs should be key-value pairs for the plugin_spec json """
-    os.makedirs("output", exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
     openapi = get_openapi(
         title="Custom ChatGPT Plugin",
         version="1.0.0",
         routes=app.routes,
     )
 
-    with open("output/openapi.yaml", "w") as openapi_yaml:
+    with open(join(out_dir, "openapi.yaml"), "w") as openapi_yaml:
         yaml.dump(openapi, openapi_yaml, sort_keys=False)
 
     plugin_spec = {
@@ -125,7 +126,7 @@ def generate_files(app: FastAPI, **kwargs):
     plugin_check_limit(plugin_spec, "description_for_model",
                        8000)  # will decrease over time
 
-    with open("output/ai-plugin.json", "w") as plugin_json:
+    with open(join(out_dir, "ai-plugin.json"), "w") as plugin_json:
         json.dump(plugin_spec, plugin_json, indent=4)
 
 

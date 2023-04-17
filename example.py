@@ -43,7 +43,7 @@ def test_hello():
 
 if __name__ == "__main__":
     # Generate the necessary files
-    generate_files(app)
+    generate_files(app, out_dir=".well-known")
 
     # Test /hello endpoint
     test_hello()
