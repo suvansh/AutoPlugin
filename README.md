@@ -110,6 +110,6 @@ def test_api():
         assert response.json() == {"result": 14}
         # Server will be stopped.
 
-test_hello()
+test_api()
 ```
 
