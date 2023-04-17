@@ -1,4 +1,4 @@
-from autoplugin import register, generate_files, launch_server
+from src.autoplugin.autoplugin import register, generate_files, launch_server
 from fastapi import FastAPI
 from testing import testing_server
 from os.path import join
@@ -12,7 +12,7 @@ async def hello(name: str, age: int = 5) -> str:
     return f"Hello, {name}! Age {age}."
 
 
-@register(app, methods=["GET"], generate_description=False)
+@register(app, methods=["GET"], generate_description=True)
 async def add(a: int, b: int) -> int:
     return a + b
 

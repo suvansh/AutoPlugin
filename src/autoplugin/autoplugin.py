@@ -1,3 +1,10 @@
+"""
+Copyright (c) 2023, Suvansh Sanjeev
+All rights reserved.
+
+This source code is licensed under the BSD-style license found in the
+LICENSE file in the root directory of this source tree. 
+"""
 import functools
 import os
 from os.path import join
@@ -144,8 +151,8 @@ def _generate_description(func: Callable) -> str:
             from langchain.prompts import PromptTemplate
             from langchain.chains import LLMChain
         except ImportError:
-            raise ImportError("Please install langchain to generate function descriptions.")
-        llm = OpenAI(temperature=0.9)
+            raise ImportError("Please install LangChain to generate function descriptions. Otherwise, set `generate_description=False` when registering your function.")
+        llm = OpenAI(temperature=0, max_tokens=100)
         # prompt = PromptTemplate(
         #     input_variables=["func_str"],
         #     template="""
