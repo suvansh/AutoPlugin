@@ -11,6 +11,7 @@ from os.path import join
 import inspect
 from typing import Callable, List, Dict, Any, Optional
 from fastapi import FastAPI, Depends
+from fastapi.responses import PlainTextResponse
 import uvicorn
 from pydantic import BaseModel, create_model
 from fastapi.openapi.utils import get_openapi
@@ -28,6 +29,8 @@ def launch(app: FastAPI, host="127.0.0.1", port=8000):
 def generate(app: FastAPI, out_dir=".well-known", **kwargs):
     """ kwargs should be key-value pairs for the plugin_spec json """
     os.makedirs(out_dir, exist_ok=True)
+
+    """ OpenAPI spec """
     openapi = get_openapi(
         title="Custom ChatGPT Plugin",
         version="1.0.0",
@@ -36,7 +39,14 @@ def generate(app: FastAPI, out_dir=".well-known", **kwargs):
 
     with open(join(out_dir, "openapi.yaml"), "w") as openapi_yaml:
         yaml.dump(openapi, openapi_yaml, sort_keys=False)
+    
+    @app.get("/openapi.yaml", response_class=PlainTextResponse)
+    async def get_openapi_yaml():
+        with open(join(out_dir, "openapi.yaml"), "r") as f:
+            content = f.read()
+        return content
 
+    """ Plugin manifest file """
     plugin_spec = {
         "name_for_human": "Custom Plugin",
         "name_for_model": "Custom Plugin",
@@ -55,6 +65,14 @@ def generate(app: FastAPI, out_dir=".well-known", **kwargs):
         "contact_email": "support@example.com",
         "legal_info_url": "http://www.example.com/legal"
     }
+    if "name" in kwargs:
+        plugin_name = kwargs.pop("name")
+        plugin_spec["name_for_human"] = plugin_name
+        plugin_spec["name_for_model"] = plugin_name
+    if "description" in kwargs:
+        plugin_description = kwargs.pop("description")
+        plugin_spec["description_for_human"] = plugin_description
+        plugin_spec["description_for_model"] = plugin_description
     plugin_spec.update(kwargs)
 
     # character limit checks
