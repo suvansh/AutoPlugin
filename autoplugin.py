@@ -1,7 +1,7 @@
 import functools
 import os
 import inspect
-from typing import Callable, List, Dict, Any
+from typing import Callable, List, Dict, Any, Optional
 from fastapi import FastAPI, Depends
 import uvicorn
 from pydantic import BaseModel, create_model
@@ -10,10 +10,22 @@ import yaml
 import json
 
 
-def register(app: FastAPI, func: Callable = None, *, methods: List[str] = None):
-    if func is None:
-        return functools.partial(register, app, methods=methods)
+_func_description_chain = None
 
+
+def register(app: FastAPI,
+             func: Callable = None,
+             *,
+             methods: List[str] = None,
+             description: Optional[str] = None,
+             generate_description: bool = True,
+             ) -> Callable:
+    if func is None:
+        return functools.partial(register, app, methods=methods, description=description, generate_description=generate_description)
+
+    if description is None and generate_description:
+        print("Generating description for function", func.__name__)
+        description = _generate_description(func)
     if methods is None:
         methods = ["POST"]
 
@@ -45,11 +57,9 @@ def register(app: FastAPI, func: Callable = None, *, methods: List[str] = None):
                 func.__name__ + "GetModel",
                 **{
                     param_name: (
-                        getattr(inspect.signature(
-                            func).parameters[param_name], "annotation", str),
+                        getattr(inspect.signature(func).parameters[param_name], "annotation", str),
                         (
-                            getattr(inspect.signature(
-                                func).parameters[param_name], "default", None)
+                            getattr(inspect.signature(func).parameters[param_name], "default", None)
                             if getattr(inspect.signature(func).parameters[param_name], "default", None) != inspect.Parameter.empty
                             else ...
                         ),
@@ -62,18 +72,18 @@ def register(app: FastAPI, func: Callable = None, *, methods: List[str] = None):
                 result = await wrapper(**params.dict())
                 return {"result": result}
 
-            app.get(f"/{func.__name__}", description=func.__doc__)(get_wrapper)
+            app.get(f"/{func.__name__}", description=description)(get_wrapper)
         elif method == "POST":
             post_wrapper = get_post_wrapper(func)
             app.post(f"/{func.__name__}",
-                     description=func.__doc__)(post_wrapper)
+                     description=description)(post_wrapper)
 
     return wrapper
 
 
 def plugin_check_limit(plugin_spec: Dict[str, Any], key: str, char_limit: int):
-    assert len(
-        plugin_spec[key]) <= char_limit, f"Key \"{key}\" in plugin spec is too long. Expected: <={char_limit}, found: {len(plugin_spec[key])}."
+    assert len(plugin_spec[key]) <= char_limit, \
+        f"Key \"{key}\" in plugin spec is too long. Expected: <={char_limit}, found: {len(plugin_spec[key])}."
 
 
 def generate_files(app: FastAPI, **kwargs):
@@ -121,3 +131,82 @@ def generate_files(app: FastAPI, **kwargs):
 
 def launch_server(app: FastAPI, host="127.0.0.1", port=8000):
     uvicorn.run(app, host=host, port=port)
+
+
+def _generate_description(func: Callable) -> str:
+    def _get_langchain_description(func_str: str) -> str:
+        global _func_description_chain
+        if _func_description_chain is not None:
+            return _func_description_chain.run(func_str=func_str)
+        try:
+            from langchain.llms import OpenAI
+            from langchain.prompts import PromptTemplate
+            from langchain.chains import LLMChain
+        except ImportError:
+            raise ImportError("Please install langchain to generate function descriptions.")
+        llm = OpenAI(temperature=0.9)
+        # prompt = PromptTemplate(
+        #     input_variables=["func_str"],
+        #     template="""
+        #         Come up with a concise description for this function for the OpenAPI spec that would serve as a useful description for a ChatGPT plugin to know when to call it.
+        #         It should be at most one or two sentences, and must be less than 50 words.
+        #         Function:
+        #         ```python
+        #         {func_str}
+        #         ```
+        #         Description:
+        #         """
+        # )
+        prompt = PromptTemplate(
+            input_variables=["func_str"],
+            template="""
+                Come up with a concise description for this function for the OpenAPI spec that would serve as a useful description for a ChatGPT plugin to know when to call it.
+                It should be at most one or two sentences, and must be less than 50 words.
+                Function:
+                ```python
+                async def add(a: int, b: int) -> int:
+                    return a + b
+                ```
+                Description:
+                Adds two numbers
+                Function:
+                ```python
+                async def hello(name: str) -> str:
+                    return "Hello, " + name + "!".
+                ```
+                Description:
+                Greets person with specified name.
+                Function:
+                ```python
+                async def pow(base: int, power: int = 2) -> int:
+                    return base ** pow
+                ```
+                Description:
+                Raises a number to a power.
+                Function:
+                ```python
+                {func_str}
+                ```
+                Description:
+                """
+        )
+        chain = LLMChain(llm=llm, prompt=prompt)
+        _func_description_chain = chain
+        return chain.run(func_str=func_str)
+
+    try:
+        func_str = inspect.getsource(func)
+    except (OSError, TypeError):
+        signature = inspect.signature(func)
+        params = []
+        for param in signature.parameters.values():
+            if param.annotation == inspect.Parameter.empty:
+                params.append(param.name)
+            else:
+                params.append(f"{param.name}: {param.annotation.__name__}")
+        return_description = "" if signature.return_annotation == inspect.Signature.empty else f" -> {signature.return_annotation.__name__}"
+        signature_string = f"{func.__name__}({', '.join(params)}){return_description}"
+        func_doc = f"\n\t{func.__doc__}" if func.__doc__ is not None else ""
+        func_str = f"{signature_string}{func_doc}"
+    description = _get_langchain_description(func_str)
+    return description

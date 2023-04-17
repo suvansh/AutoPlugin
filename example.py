@@ -6,17 +6,18 @@ from os.path import join
 
 app = FastAPI()
 
-@register(app, methods=["GET", "POST"])
+
+@register(app, methods=["GET", "POST"], generate_description=True)
 async def hello(name: str, age: int = 5) -> str:
-    """ Greets user """
     return f"Hello, {name}! Age {age}."
 
-@register(app, methods=["GET"])
+
+@register(app, methods=["GET"], generate_description=False)
 async def add(a: int, b: int) -> int:
-    """ Adds numbers """
     return a + b
 
-if __name__ == "__main__":
+
+def test_hello():
     # Generate the necessary files
     generate_files(app)
 
@@ -38,4 +39,15 @@ if __name__ == "__main__":
         response = requests.get(url, params={"name": "Jane Doe", "age": 10})
         assert response.json() == {"result": "Hello, Jane Doe! Age 10."}
         # Server will be stopped.
+
+
+if __name__ == "__main__":
+    # Generate the necessary files
+    generate_files(app)
+
+    # Test /hello endpoint
+    test_hello()
+
+    # Launch the server
+    launch_server(app)
         
