@@ -29,6 +29,7 @@ def launch(app: FastAPI, host="127.0.0.1", port=8000):
 
 def generate(app: FastAPI, version="v1", out_dir=".well-known",
              overwrite_plugin_spec=True, overwrite_openapi_spec=True,
+             name="", description="",
              **kwargs):
     """ kwargs should be key-value pairs for the plugin_spec json """
     os.makedirs(out_dir, exist_ok=True)
@@ -39,7 +40,7 @@ def generate(app: FastAPI, version="v1", out_dir=".well-known",
         "name_for_model": "Custom Plugin",
         "description_for_human": "Unspecified custom plugin. Add behavior here.",
         "description_for_model": "Unspecified custom plugin. Add behavior here.",
-        "schema_version": "v1",
+        "schema_version": version,
         "auth": {
             "type": "none"
         },
@@ -53,14 +54,12 @@ def generate(app: FastAPI, version="v1", out_dir=".well-known",
         "legal_info_url": "http://www.example.com/legal"
     }
     
-    if "name" in kwargs:
-        plugin_name = kwargs.pop("name")
-        plugin_spec["name_for_human"] = plugin_name
-        plugin_spec["name_for_model"] = plugin_name
-    if "description" in kwargs:
-        plugin_description = kwargs.pop("description")
-        plugin_spec["description_for_human"] = plugin_description
-        plugin_spec["description_for_model"] = plugin_description
+    if name:
+        plugin_spec["name_for_human"] = name
+        plugin_spec["name_for_model"] = name
+    if description:
+        plugin_spec["description_for_human"] = description
+        plugin_spec["description_for_model"] = description
     plugin_spec.update(kwargs)
 
     # character limit checks
