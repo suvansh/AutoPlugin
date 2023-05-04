@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="autoplugin",
-    version="0.1.3",
+    version="0.1.4",
     packages=find_packages(),
     install_requires=[
         "fastapi",
@@ -23,6 +23,7 @@ setup(
     project_urls={        
         'Tracker': 'https://github.com/suvansh/autoplugin/issues',
         'Source': 'https://github.com/suvansh/autoplugin/',
+        'Blog': 'https://brilliantly.ai/blog/autoplugin',
         'Documentation': 'https://github.com/suvansh/AutoPlugin/blob/main/README.md',
     },
     classifiers=[
