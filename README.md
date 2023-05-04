@@ -93,8 +93,13 @@ launch(app)
 This example creates a FastAPI server with two endpoints, `/hello` and `/add`, that can be accessed using GET or POST requests.
 AutoPlugin will use the docstring for the OpenAPI description of `/add` and generate an automatic description for `/hello` by passing the source code of the function to OpenAI's API.
 
-## The `@register` Decorator
-The `@register` decorator is used as follows:
+
+## Docs 
+
+### The `@register` Decorator
+
+The `@register` decorator is used as follows:
+
 ```python
 @register(app: FastAPI,
             methods: List[str],                     # which HTTP methods to support
@@ -103,23 +108,52 @@ The `@register` decorator is used as follows:
 def my_func(...):
     ...
 ```
-AutoPlugin generates function descriptions in the OpenAPI spec so that ChatGPT knows how to use your endpoints. There are a few keyword arguments to customize the behavior of this generation
-By default, the description is fetched from the docstring. If there's no docstring, or if you specify `generate_description=True`, AutoPlugin will generate one automatically from OpenAI's API (requires the LangChain package and setting the `OPENAI_API_KEY` environment variable).
-Finally, you can override the description generation behavior by specifying a description (e.g. if the docstring contains extra information not needed in the OpenAPI description) in the `description` keyword argument.
+
+AutoPlugin generates function descriptions in the OpenAPI spec so that ChatGPT knows how to use your endpoints. There are a few arguments to customize the behavior of this generation.
+
+- `app`: Your FastAPI application. AutoPlugin provides a `get_app` function that includes CORSMiddleware for testing convenience (allows all origins by default).
+- `methods`: A list of HTTP methods to be supported (e.g. ”GET”, POST”)
+- `description`: If provided, overrides everything else and is used directly as the endpoint description for the OpenAPI spec
+- `generate_description`: If set to `True`, AutoPlugin will generate one automatically from OpenAI's API (requires the LangChain package and setting the `OPENAI_API_KEY` environment variable).
+
+By default (if neither `description` nor `generate_description` are provided), the description is fetched from the docstring. If there's no docstring, AutoPlugin falls back to generating one automatically.
 
 
-## The `generate` Function
+### The `generate` Function
+
 The `generate` function has the following signature:
+
 ```python
-def generate(app: FastAPI, out_dir: str=".well-known", **kwargs):
+def generate(app: FastAPI, version="v1", out_dir=".well-known",
+             overwrite_plugin_spec=True, overwrite_openapi_spec=True,
+             name="", description="",
+             **kwargs)
 ```
-The `out_dir` keyword argument determines where the `ai-plugin.json` and `openapi.yaml` files are saved upon generation.
 
-All other keyword arguments are used to customize fields of the [plugin manifest file](https://platform.openai.com/docs/plugins/getting-started/plugin-manifest).
-The `name` keyword argument can be used for convenience to update both `name_for_human` and `name_for_model` at once. Same for `description`. In a future update, these can be automatically generated to further streamline the deployment process. Keep in mind the [best practices](https://platform.openai.com/docs/plugins/getting-started/writing-descriptions) for descriptions.
+- `app`: Your FastAPI application again.
+- `version="v1"`: What version number to pass to both the plugin and OpenAPI specs.
+- `out_dir=".well-known"`: The directory to save both files to.
+- `overwrite_plugin_spec=True`: If set to False, does not overwrite `ai-plugin.json` if it already exists.
+- `overwrite_openapi_spec=True`: If set to False, does not overwrite `openapi.yaml` if it already exists.
+- `name=""`: If specified, used for both `name_for_human` and `name_for_model`.
+- `description=""`: If specified, used for both `description_for_human` and `description_for_model`. Keep in mind the [best practices](https://platform.openai.com/docs/plugins/getting-started/writing-descriptions) for descriptions.
+- `**kwargs`: All other keyword arguments are passed on to `ai-plugin.json` directly. See the full list of possible options [here](https://platform.openai.com/docs/plugins/getting-started/plugin-manifest).
 
 
-## Testing
+### The `launch` Function
+
+The `launch` function has the following signature:
+
+```python
+def launch(app: FastAPI, host="127.0.0.1", port=8000):
+```
+
+- `app`: Still your FastAPI application.
+- `host="127.0.0.1"`: the host to launch the server on
+- `port=8000`: the port to launch the server on
+
+
+### Testing
 AutoPlugin also provides a `testing_server` utility (courtesy of [florimondmanca](https://github.com/encode/uvicorn/issues/742#issuecomment-674411676)) for testing your endpoints. Here's an example of how you can use it to test the `/hello` and `/add` endpoints from the example above:
 ```python
 from autoplugin.testing import testing_server

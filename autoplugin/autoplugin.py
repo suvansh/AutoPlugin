@@ -187,7 +187,7 @@ def _generate_description(func: Callable) -> str:
             from langchain.prompts import PromptTemplate
             from langchain.chains import LLMChain
         except ImportError:
-            raise ImportError("Please install LangChain to generate function descriptions. Otherwise, set `generate_description=False` when registering your function.")
+            raise ImportError("Please install dependencies with `pip install 'autoplugin[gen]` to generate function descriptions. Otherwise, set `generate_description=False` when registering your function.")
         llm = OpenAI(temperature=0, max_tokens=100)
         # prompt = PromptTemplate(
         #     input_variables=["func_str"],
