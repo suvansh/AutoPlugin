@@ -105,7 +105,7 @@ The `@register` decorator is used as follows:
             methods: List[str],                     # which HTTP methods to support
             description: Optional[str],             # if provided, used as is
             generate_description: Optional[bool])   # whether to autogenerate a description
-def my_func(...):
+async def my_func(...):
     ...
 ```
 
