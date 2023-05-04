@@ -27,25 +27,11 @@ def launch(app: FastAPI, host="127.0.0.1", port=8000):
     uvicorn.run(app, host=host, port=port)
 
 
-def generate(app: FastAPI, out_dir=".well-known", **kwargs):
+def generate(app: FastAPI, version="v1", out_dir=".well-known",
+             overwrite_plugin_spec=True, overwrite_openapi_spec=True,
+             **kwargs):
     """ kwargs should be key-value pairs for the plugin_spec json """
     os.makedirs(out_dir, exist_ok=True)
-
-    """ OpenAPI spec """
-    openapi = get_openapi(
-        title="Custom ChatGPT Plugin",
-        version="1.0.0",
-        routes=app.routes,
-    )
-
-    with open(join(out_dir, "openapi.yaml"), "w") as openapi_yaml:
-        yaml.dump(openapi, openapi_yaml, sort_keys=False)
-    
-    @app.get("/openapi.yaml", response_class=PlainTextResponse)
-    async def get_openapi_yaml():
-        with open(join(out_dir, "openapi.yaml"), "r") as f:
-            content = f.read()
-        return content
 
     """ Plugin manifest file """
     plugin_spec = {
@@ -66,6 +52,7 @@ def generate(app: FastAPI, out_dir=".well-known", **kwargs):
         "contact_email": "support@example.com",
         "legal_info_url": "http://www.example.com/legal"
     }
+    
     if "name" in kwargs:
         plugin_name = kwargs.pop("name")
         plugin_spec["name_for_human"] = plugin_name
@@ -83,12 +70,30 @@ def generate(app: FastAPI, out_dir=".well-known", **kwargs):
     _plugin_check_limit(plugin_spec, "description_for_model",
                        8000)  # will decrease over time
 
-    with open(join(out_dir, "ai-plugin.json"), "w") as plugin_json:
-        json.dump(plugin_spec, plugin_json, indent=4)
+    if overwrite_plugin_spec or not os.path.exists(join(out_dir, "ai-plugin.json")):
+        with open(join(out_dir, "ai-plugin.json"), "w") as plugin_json:
+            json.dump(plugin_spec, plugin_json, indent=4)
 
     @app.get("/.well-known/ai-plugin.json", response_class=PlainTextResponse)
     async def get_plugin_json():
         with open(join(out_dir, "ai-plugin.json"), "r") as f:
+            content = f.read()
+        return content
+    
+    """ OpenAPI spec """
+    openapi = get_openapi(
+        title=plugin_spec["name_for_human"],
+        version=version,
+        routes=app.routes,
+    )
+
+    if overwrite_openapi_spec or not os.path.exists(join(out_dir, "openapi.yaml")):
+        with open(join(out_dir, "openapi.yaml"), "w") as openapi_yaml:
+            yaml.dump(openapi, openapi_yaml, sort_keys=False)
+    
+    @app.get("/openapi.yaml", response_class=PlainTextResponse)
+    async def get_openapi_yaml():
+        with open(join(out_dir, "openapi.yaml"), "r") as f:
             content = f.read()
         return content
 
@@ -134,6 +139,8 @@ def register(app: FastAPI,
             return {"result": result}
 
         return post_wrapper
+    
+    ResponseModel = create_model(f"{func.__name__}ResponseModel", result=(Any, ...))
 
     for method in methods:
         if method == "GET":
@@ -157,11 +164,11 @@ def register(app: FastAPI,
                 result = await wrapper(**params.dict())
                 return {"result": result}
 
-            app.get(f"/{func.__name__}", description=description)(get_wrapper)
+            app.get(f"/{func.__name__}", description=description, response_model=ResponseModel)(get_wrapper)
         elif method == "POST":
             post_wrapper = get_post_wrapper(func)
             app.post(f"/{func.__name__}",
-                     description=description)(post_wrapper)
+                     description=description, response_model=ResponseModel)(post_wrapper)
 
     return wrapper
 

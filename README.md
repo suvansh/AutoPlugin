@@ -43,7 +43,8 @@ async def get_order(name: str) -> str:
 ```
 
 4. Generate the necessary files (`openapi.yaml` and `ai-plugin.json`) for your ChatGPT plugin.
-Optionally, specify `out_dir` to change where they're saved to:
+Optionally, specify `out_dir` to change where they're saved to,
+or set `overwrite_openapi_spec=False` or `overwrite_plugin_spec=False` to avoid overwriting the respective files.
 ```python
 # generated files saved to `.well-known/` directory
 generate(app, name="Example", description="Plugin to add numbers or greet users")
